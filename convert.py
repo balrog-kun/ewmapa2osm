@@ -1009,7 +1009,7 @@ for n in finalnodes:
         bbox[3] = p[1]
 bbox = [ bbox[0] - 10, bbox[1] - 10, bbox[2] + 10, bbox[3] + 10 ]
 
-xsize, ysize = 200, 200 # 100m x 100m
+xsize, ysize = 100, 100 # 100m x 100m
 yres = int((bbox[2] - bbox[0] + 200) / xsize)
 for w in finalways:
     nd = finalways[w]['nd']
@@ -1050,7 +1050,7 @@ def point_in_poly(pt, poly):
 
 for arr in [ segments, points ]:
     for layer in arr:
-        if layer.find("BUPP") > -1:
+        if layers[layer]['type'] != 'attrib':
             continue
         for attrs in arr[layer]:
             if "_d0" in attrs or "_d1" in attrs:
@@ -1134,22 +1134,22 @@ cmd = [ #"strace",
 p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 ret = p.communicate(csinput.encode("utf8"))[0].decode("utf8")
 
-nid = -1
+nid = 1
 for i, line in enumerate(ret.split("\n")):
     if len(line) < 3:
-        if i < len(nodes):
+        if i < len(finalnodes):
             raise Exception("error reprojecting")
         break
     lat, lon, _ = line.split(None, 2)
     finalnodes[narr[i]]["_id"] = str(nid)
     finalnodes[narr[i]]["_lat"] = lat
     finalnodes[narr[i]]["_lon"] = lon
-    nid -= 1
+    nid += 1
 
-wid = -1
+wid = 1
 for i in finalways:
     finalways[i]["id"] = str(wid)
-    wid -= 1
+    wid += 1
 
 sys.stderr.write("Building .osm tree...\n")
 
@@ -1163,10 +1163,10 @@ for nodeid in finalnodes:
 
     for prop in finalnodes[nodeid]:
         pname = str(prop)
-        #if pname[0] == "_":
-        #    continue
+        if pname[0] == "_":
+            continue
         ElementTree.SubElement(node, "tag",
-                { "k": pname, "v": finalnodes[nodeid][prop] })
+                { "k": pname, "v": str(finalnodes[nodeid][prop]) })
 
 for wayid in finalways:
     way = finalways[wayid]
@@ -1177,10 +1177,10 @@ for wayid in finalways:
 
     for prop in way["attrs"]:
         pname = str(prop)
-        #if pname[0] == "_":
-        #    continue
+        if pname[0] == "_":
+            continue
         ElementTree.SubElement(node, "tag",
-                { "k": pname, "v": way["attrs"][prop] })
+                { "k": pname, "v": str(way["attrs"][prop]) })
 
     for nd in way["nd"]:
         ElementTree.SubElement(node, "nd", { "ref": finalnodes[nd]["_id"] })
