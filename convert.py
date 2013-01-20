@@ -843,6 +843,111 @@ for arr in [ segments, points ]:
             elif t:
                 attrs['fixme2'] = 'unknown function ' + str(t)
 
+sys.stderr.write("Building a segments index...\n")
+
+idx = {}
+bbox = [ 100000000, 100000000, 0, 0 ]
+for layer in segments:
+    for seg in segments[layer]:
+        p = seg["_p1"].split("x")
+        p = ( float(p[0]), float(p[1]) )
+        seg['_p1f'] = p
+        p = seg["_p0"].split("x")
+        p = ( float(p[0]), float(p[1]) )
+        seg['_p0f'] = p
+        if p[0] < bbox[0]:
+            bbox[0] = p[0]
+        if p[1] < bbox[1]:
+            bbox[1] = p[1]
+        if p[0] > bbox[2]:
+            bbox[2] = p[0]
+        if p[1] > bbox[3]:
+            bbox[3] = p[1]
+bbox = [ bbox[0] - 10, bbox[1] - 10, bbox[2] + 10, bbox[3] + 10 ]
+
+xsize, ysize = 20, 20 # 20m x 20m
+yres = int((bbox[2] - bbox[0] + 200) / xsize)
+def add_seg_to_idx(seg):
+    p = seg["_p0f"]
+    x0 = int((p[0] - xsize * 0.5 - bbox[0]) / xsize)
+    x1 = int((p[0] + xsize * 0.5 - bbox[0]) / xsize)
+    y0 = int((p[1] - ysize * 0.5 - bbox[1]) / ysize)
+    y1 = int((p[1] + ysize * 0.5 - bbox[1]) / ysize)
+    if x0 + y0 * yres not in idx:
+        idx[x0 + y0 * yres] = []
+    idx[x0 + y0 * yres].append(seg)
+    if x0 + y1 * yres not in idx:
+        idx[x0 + y1 * yres] = []
+    idx[x0 + y1 * yres].append(seg)
+    if x1 + y0 * yres not in idx:
+        idx[x1 + y0 * yres] = []
+    idx[x1 + y0 * yres].append(seg)
+    if x1 + y1 * yres not in idx:
+        idx[x1 + y1 * yres] = []
+    idx[x1 + y1 * yres].append(seg)
+for layer in segments:
+    for seg in segments[layer]:
+        add_seg_to_idx(seg)
+
+sys.stderr.write("Merging close nodes and segments...\n")
+
+epsilon = 0.05 # 5cm
+for layer in segments:
+    toappend = []
+    for seg in segments[layer]:
+        for pn in [ '_p0f', '_p1f' ]:
+            p = seg[pn]
+            x = int((p[0] - bbox[0]) / xsize)
+            y = int((p[1] - bbox[1]) / ysize)
+            j = x + y * yres
+            if j not in idx:
+                continue
+            for seg2 in idx[j]:
+                if seg is seg2:
+                    continue
+                a, b = seg2['_p0f'], seg2['_p1f']
+                ab_dist = math.hypot(a[0] - b[0], a[1] - b[1])
+                ap_dist = math.hypot(a[0] - p[0], a[1] - p[1])
+                bp_dist = math.hypot(b[0] - p[0], b[1] - p[1])
+                if ap_dist > ab_dist - epsilon / 2:
+                    continue
+                if bp_dist > ab_dist - epsilon / 2:
+                    continue
+                line_dist = abs((p[0] - a[0]) * (b[1] - a[1]) -
+                        (p[1] - a[1]) * (b[0] - a[0])) / ab_dist
+                if line_dist > epsilon:
+                    continue
+                newseg = {}
+                newseg.update(seg2)
+                seg2['_p1'] = seg[pn[:3]]
+                newseg['_p0'] = seg[pn[:3]]
+                seg2['_p1f'] = p
+                newseg['_p0f'] = p
+
+                toappend.append(newseg)
+                add_seg_to_idx(newseg)
+    #segments[layer] += toappend
+    for seg in toappend:
+        segments[seg['_seglyr']].append(seg)
+
+idx = None
+
+sys.stderr.write("Removing overlapping segments...\n")
+
+segs = {}
+for layer in segments:
+    i = 0
+    while i < len(segments[layer]):
+        s = segments[layer][i]
+        idx = s["_p0"] + 'x' + s["_p1"]
+        if idx in segs:
+            segs[idx].update(s)
+            del segments[layer][i]
+        else:
+            segs[idx] = s
+            i += 1
+segs = None
+
 sys.stderr.write("Joining segments to form polygons...\n")
 
 def signbit(x):
