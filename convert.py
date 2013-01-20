@@ -618,7 +618,6 @@ attrs = {}
 
 segments = {}
 points = {}
-nodes = {}
 
 def add_entity(attrs):
     type = attrs.pop("type")
@@ -681,7 +680,7 @@ def add_entity(attrs):
         if type != "LINE":
             attrs["geometry"] = type.lower()
             if 40 in attrs:
-            attrs["radius"] = attrs.pop(40)
+                attrs["radius"] = attrs.pop(40)
     elif type == "TEXT":
         attrs["_layer"] = layers[layer]["name"]
         attrs["_name"] = attrs.pop(1)
@@ -711,16 +710,7 @@ def add_entity(attrs):
     attrs["_p0"] = p0[0] + "x" + p0[1]
     if p1:
         attrs["_p1"] = p1[0] + "x" + p1[1]
-        if layer not in nodes:
-            nodes[layer] = {}
-        if attrs["_p0"] not in nodes[layer]:
-            nodes[layer][attrs["_p0"]] = []
-        nodes[layer][attrs["_p0"]].append(attrs)
-        if attrs["_p1"] not in nodes[layer]:
-            nodes[layer][attrs["_p1"]] = []
-        nodes[layer][attrs["_p1"]].append(attrs)
-
-        attrs["_id"] = len(arr[layer])
+        attrs["_seglyr"] = layer
 
     arr[layer].append(attrs)
 
@@ -800,18 +790,18 @@ for arr in [ segments, points ]:
             p1 = attrs["_p1"].split("x")
             p1 = ( float(p1[0]), float(p1[1]) )
             p0 = ( (p0[0] + p1[0]) * 0.5, (p0[1] + p1[1]) * 0.5 )
-        mindist = 100000000000
+        mindist = 1000000000
         street = None
-        for sname, sp, sa in streets:
+        for sp, sa, sname in streets:
             adiff = sa - a
-            if adiff > 300.0
+            if adiff > 300.0:
                 adiff -= 360.0
-            if adiff < -300.0
+            if adiff < -300.0:
                 adiff += 360.0
             if adiff > 3.0 or adiff < -3.0:
                 continue
             # TODO: mierzyc odleglosc tylko w osi prostopadlej do kata napisu
-            p = ( sp[0] - p0[0], s0[1] - p0[1] )
+            p = ( sp[0] - p0[0], sp[1] - p0[1] )
             sqdist = p[0] * p[0] + p[1] * p[1]
             if sqdist < mindist:
                 mindist = sqdist
@@ -825,8 +815,8 @@ sys.stderr.write("Fixing up building attributes...\n")
 for arr in [ segments, points ]:
     # TODO: powinnismy rozroznic miedzy numerem nawyzszej kondygnacji i
     # liczba kondygnacji
-    for layer[:5] in [ "EBUOA", "EBTOO" ]:
-        if layer not in arr:
+    for layer in arr:
+        if layer[:5] not in [ "EBUOA", "EBTOO" ]:
             continue
         for attrs in arr[layer]:
             if "_name" not in attrs:
@@ -892,6 +882,16 @@ def getangleeq(a, b, c):
     except:
         return -math.pi
 
+nodes = {}
+for layer in segments:
+    for attrs in segments[layer]:
+        if attrs["_p0"] not in nodes:
+            nodes[attrs["_p0"]] = []
+        nodes[attrs["_p0"]].append(attrs)
+        if attrs["_p1"] not in nodes:
+            nodes[attrs["_p1"]] = []
+        nodes[attrs["_p1"]].append(attrs)
+
 finalnodes = {}
 finalways = {}
 for layer in segments:
@@ -911,7 +911,7 @@ for layer in segments:
             i = end
             #poly = [ ( s["_id"], [ "_d0", "_d1" ][dir], j ),
             #        ( s["_id"], [ "_d0", "_d1" ][dir], end ) ]
-            poly = [ ( s["_id"], [ "_d0", "_d1" ][dir], j ) ]
+            poly = [ ( s, [ "_d0", "_d1" ][dir], j ) ]
             sum = 0
             while j != end:
                 a, b = i.split("x"), j.split("x")
@@ -920,7 +920,7 @@ for layer in segments:
 
                 maxangle = -math.pi
                 maxedge = None
-                for next in nodes[layer][j]:
+                for next in nodes[j]:
                     if next is s:
                         continue
 
@@ -971,7 +971,7 @@ for layer in segments:
                 j = k
 
                 sum += maxangle
-                poly.append(( s["_id"], ndir, j ))
+                poly.append(( s, ndir, j ))
 
             if j != end:
                 continue
@@ -981,16 +981,17 @@ for layer in segments:
             if sum < 0:
                 continue
 
-            for seg_id, ndir, node in poly:
-                finalnodes[node] = {}
-                #if seg_id not in segments[layer]:####
-                #    print(repr([layer, seg_id, ndir, node, poly]))####
-                segments[layer][seg_id][ndir] = 0
-            nd = [ node for s, n, node in poly ]
-            finalways[",".join(sorted(nd))] = {
-                "nd": nd + [ nd[0] ],
-                "attrs": seg,
-            }
+            for seg2, ndir, node in poly:
+                if len(poly) > 3:
+                    finalnodes[node] = {}
+                seg2[ndir] = 0
+            if len(poly) > 3:
+                nd = [ node for s, n, node in poly ]
+                finalways[",".join(sorted(nd))] = {
+                    "nd": nd + [ nd[0] ],
+                    "attrs": seg,
+                }
+nodes = None
 
 sys.stderr.write("Building shapes index...\n")
 
@@ -1097,7 +1098,11 @@ for arr in [ segments, points ]:
             #    pname = str(prop)
             #    if pname[0] != "_":
             #        finalways[poly]["attrs"][prop] = attrs[prop]
+segments = None
+points = None
+idx = None
 
+# TODO: filter by size perhaps
 for i in finalways:
     attrs = finalways[i]["attrs"]
     if "_area" in attrs:
