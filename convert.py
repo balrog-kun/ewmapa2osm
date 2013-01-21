@@ -621,7 +621,7 @@ segments = {}
 points = {}
 
 def add_entity(attrs):
-    type = attrs.pop("type")
+    etype = attrs.pop("type")
     layer = attrs.pop(8)
 
     if layer not in layers or not layers[layer]["use"]:
@@ -644,7 +644,8 @@ def add_entity(attrs):
     #if 40 in attrs:
     #    radius = attrs.pop(40)
 
-    if type == "LINE" or type == "CIRCLE" or type == "ARC" or type == "POINT":
+    if etype == "LINE" or etype == "CIRCLE" or \
+            etype == "ARC" or etype == "POINT":
         attrs["ewmapa:warstwa"] = layers[layer]["name"]
         attrs["source"] = sourcestr
         if "source" in layers[layer]:
@@ -678,11 +679,11 @@ def add_entity(attrs):
             #attrs["note"] = "no style information"
             pass
         attrs.update(style)
-        if type != "LINE":
-            attrs["geometry"] = type.lower()
+        if etype != "LINE":
+            attrs["geometry"] = etype.lower()
             if 40 in attrs:
                 attrs["radius"] = attrs.pop(40)
-    elif type == "TEXT":
+    elif etype == "TEXT":
         attrs["_layer"] = layers[layer]["name"]
         attrs["_name"] = attrs.pop(1)
         if 71 in attrs:
@@ -698,7 +699,7 @@ def add_entity(attrs):
         attrs["_text_rotation"] = attrs.pop(50)
         attrs["_oblique_angle"] = attrs.pop(51)
     else:
-        sys.stderr.write("Unknown entity type " + type +
+        sys.stderr.write("Unknown entity type " + etype +
                 " at line " + str(lnum) + "\n")
         return
 
@@ -722,7 +723,7 @@ for line in input:
     if lnum & 1:
         name = line.strip()
     else:
-        type = int(line)
+        etype = int(line)
         continue
 
     if sec_lnum == None:
@@ -744,15 +745,15 @@ for line in input:
     if section != "ENTITIES":
         continue
 
-    if type == 0:
+    if etype == 0:
         if attrs:
             add_entity(attrs)
         attrs = { "type": name }
     else:
-        if type in attrs and type != 100:
-            sys.stderr.write("Tag " + str(type) + " duplicate in object " +
+        if etype in attrs and etype != 100:
+            sys.stderr.write("Tag " + str(etype) + " duplicate in object " +
                     repr(attrs) + " on line " + str(lnum) + "\n")
-        attrs[type] = name
+        attrs[etype] = name
 
 input.close()
 
