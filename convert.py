@@ -1109,6 +1109,21 @@ for layer in segments:
                     "nd": nd + [ nd[0] ],
                     "attrs": seg,
                 }
+if 0:
+    finalnodes = {}
+    finalways = {}
+    for layer in segments:
+        for seg in segments[layer]:
+            if "_d0" in seg or "_d0" in seg:
+                continue
+
+            finalnodes[seg["_p0"]] = {}
+            finalnodes[seg["_p1"]] = {}
+            nd = [ seg["_p0"], seg["_p1"] ]
+            finalways[",".join(nd)] = {
+                "nd": nd,
+                "attrs": seg,
+            }
 nodes = None
 
 sys.stderr.write("Building shape index...\n")
