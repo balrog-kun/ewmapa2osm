@@ -162,7 +162,7 @@ layers = {
         "use": 1,
     },
     "EADTD_T_0": {
-        "type": "text",
+        "type": "attrib",
         "name": "Numer adresowy",
         "use": 1,
     },
@@ -398,7 +398,6 @@ layers = {
                 "z pomiaru w terenie",
         "source": "survey",
         "use": 1,
-        "default": { "building": "yes" },
     },
     "EBTPO_L_3": {
         "type": "spatial",
@@ -431,7 +430,6 @@ layers = {
                 "z rastra",
         "source": "raster",
         "use": 1,
-        "default": { "building": "yes" },
     },
     "EBTPO_L_7": {
         "type": "spatial",
@@ -658,7 +656,7 @@ def add_entity(attrs):
             stylestr = attrs.pop(6)
             if stylestr in types:
                 style.update(types[stylestr])
-                style["ewmapa:kod_znakowy"] = stylestr
+                #style["ewmapa:kod_znakowy"] = stylestr
             else:
                 sys.stderr.write("Unknown style " + str(stylestr) +
                         " for line " + repr(attrs) +
@@ -793,25 +791,34 @@ for arr in [ segments, points ]:
             p1 = attrs["_p1"].split("x")
             p1 = ( float(p1[0]), float(p1[1]) )
             p0 = ( (p0[0] + p1[0]) * 0.5, (p0[1] + p1[1]) * 0.5 )
-        mindist = 1000000000
+        mindist = 800 # 0.8km in parallel axis
         street = None
         for sp, sa, sname in streets:
             adiff = sa - a
-            if adiff > 300.0:
+            while adiff > 300.0:
                 adiff -= 360.0
-            if adiff < -300.0:
+            while adiff < -100.0:
                 adiff += 360.0
-            if adiff > 3.0 or adiff < -3.0:
+            if (adiff > 15.0 or adiff < -15.0) and \
+                    (adiff < 180 - 15.0 or adiff > 180 + 15.0):
                 continue
-            # TODO: mierzyc odleglosc tylko w osi prostopadlej do kata napisu
-            p = ( sp[0] - p0[0], sp[1] - p0[1] )
-            sqdist = p[0] * p[0] + p[1] * p[1]
-            if sqdist < mindist:
-                mindist = sqdist
+
+            rad = math.radians(sa)
+            per_dist = (sp[0] - p0[0]) * math.sin(rad) - \
+                    (sp[1] - p0[1]) * math.cos(rad)
+            if (adiff - 90.0) * per_dist > 0.0:
+                # Wrong side of the street
+                continue
+
+            par_dist = (sp[0] - p0[0]) * -math.cos(rad) - \
+                    (sp[1] - p0[1]) * math.sin(rad)
+            if abs(par_dist) < mindist and \
+                    abs(per_dist) < 150: # 150m perpendicular distance
+                mindist = abs(par_dist)
                 street = sname
-        if mindist < 900 * 900:
+        if street is not None:
             attrs["addr:street"] = street
-        attrs["addr:housenumber"] = attrs.pop("_name")
+        attrs["addr:housenumber"] = attrs.pop("_name").lower()
 
 sys.stderr.write("Fixing up building attributes...\n")
 
@@ -825,9 +832,10 @@ for arr in [ segments, points ]:
             if "_name" not in attrs:
                 continue
             t = attrs.pop("_name").lower()
-            attrs["ewmapa:funkcja"] = t
+            #attrs["ewmapa:funkcja"] = t
             if t in busealias:
                 t = busealias[t]
+            levels_attrs = {}
             if t[-1] == "k" or t[-1].isdigit():
                 end = len(t)
                 if t[-1] == "k":
@@ -837,7 +845,7 @@ for arr in [ segments, points ]:
                         t[start - 1] == '.'):
                     start -= 1
                 if start < end:
-                    attrs["building:levels"] = t[start:end]
+                    levels_attrs["building:levels"] = t[start:end]
                     t = t[:start]
             if t in busealias:
                 t = busealias[t]
@@ -845,8 +853,9 @@ for arr in [ segments, points ]:
                 attrs.update(buse[t])
             elif t:
                 attrs['fixme2'] = 'unknown function ' + str(t)
+            attrs.update(levels_attrs)
 
-sys.stderr.write("Building a segments index...\n")
+sys.stderr.write("Building a segment index...\n")
 
 idx = {}
 bbox = [ 100000000, 100000000, 0, 0 ]
@@ -1101,7 +1110,7 @@ for layer in segments:
                 }
 nodes = None
 
-sys.stderr.write("Building shapes index...\n")
+sys.stderr.write("Building shape index...\n")
 
 idx = {}
 bbox = [ 100000000, 100000000, 0, 0 ]
@@ -1192,20 +1201,12 @@ for arr in [ segments, points ]:
                 if poly:
                     break
             if not poly:
-                finalnodes[str(p0[0]) + "x" + str(p0[1])] = attrs
+                finalnodes[attrs['_p0']] = attrs
                 continue
 
             if "add_tags" not in finalways[poly]:
                 finalways[poly]["add_tags"] = []
-            finalways[poly]["add_tags"].append(( layer,
-                str(p0[0]) + "x" + str(p0[1]), attrs ))
-
-            #finalways[poly]["attrs"].update(attrs)
-
-            #for prop in attrs:
-            #    pname = str(prop)
-            #    if pname[0] != "_":
-            #        finalways[poly]["attrs"][prop] = attrs[prop]
+            finalways[poly]["add_tags"].append(attrs)
 segments = None
 points = None
 idx = None
@@ -1219,14 +1220,23 @@ for i in finalways:
     if "add_tags" not in finalways[i]:
         continue
 
-    layers = {}
-    for layer, id, a in finalways[i]["add_tags"]:
-        layers[layer] = layer not in layers
-    for layer, id, a in finalways[i]["add_tags"]:
-        if layers[layer]:
-            attrs.update(a)
-        else:
-            finalnodes[id] = a
+    conflicts = {}
+    newtags = {}
+    addr_cnt = len([ a for a in finalways[i]['add_tags'] \
+            if 'addr:housenumber' in a ])
+    for a in finalways[i]["add_tags"]:
+        if 'addr:housenumber' in a and addr_cnt != 1:
+            finalnodes[a['_p0']] = a
+            continue
+        for prop in a:
+            if type(prop) != str or prop[0] == '_':
+                continue
+            if prop in newtags and newtags[prop] != a[prop]:
+                conflicts[prop] = 0
+        newtags.update(a)
+    attrs.update(newtags)
+    if conflicts:
+        attrs['note3'] = 'Conflicting tags: ' + str(list(conflicts.keys()))
 
 sys.stderr.write("Assigning ids and transforming coordinates to lat/lon...\n")
 
