@@ -9,7 +9,10 @@ import math
 import xml.etree.cElementTree as ElementTree
 import codecs
 
-input = codecs.open('rudaslaska.dxf', 'r', 'latin2')
+filename = 'rudaslaska.dxf'
+sourcestr = 'UM Ruda Śląska'
+
+input = codecs.open(filename, 'r', 'cp1250')
 
 types = {
     "1": {}, "10": {},
@@ -645,7 +648,7 @@ def add_entity(attrs):
 
     if type == "LINE" or type == "CIRCLE" or type == "ARC" or type == "POINT":
         attrs["ewmapa:warstwa"] = layers[layer]["name"]
-        attrs["source"] = "UM Ruda Śląska"
+        attrs["source"] = sourcestr
         if "source" in layers[layer]:
             attrs["source"] += ", " + layers[layer]["source"]
         style = {}
@@ -1243,6 +1246,7 @@ cmd = [ #"strace",
         "-f", "%.7f" ]
 p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 ret = p.communicate(csinput.encode("utf8"))[0].decode("utf8")
+csinput = None
 
 nid = 1
 for i, line in enumerate(ret.split("\n")):
@@ -1255,6 +1259,8 @@ for i, line in enumerate(ret.split("\n")):
     finalnodes[narr[i]]["_lat"] = lat
     finalnodes[narr[i]]["_lon"] = lon
     nid += 1
+narr = None
+ret = None
 
 wid = 1
 for i in finalways:
@@ -1271,12 +1277,14 @@ for nodeid in finalnodes:
         "version": str(1),
         "id": finalnodes[nodeid]["_id"], })
 
+    if 'source' not in finalnodes[nodeid]:
+        finalnodes[nodeid]['source'] = sourcestr
+
     for prop in finalnodes[nodeid]:
-        pname = str(prop)
-        if pname[0] == "_":
+        if type(prop) != str or prop[0] == "_":
             continue
         ElementTree.SubElement(node, "tag",
-                { "k": pname, "v": str(finalnodes[nodeid][prop]) })
+                { "k": prop, "v": str(finalnodes[nodeid][prop]) })
 
 for wayid in finalways:
     way = finalways[wayid]
@@ -1285,15 +1293,19 @@ for wayid in finalways:
         "version": str(1),
         "id": way["id"] })
 
+    if 'source' not in way["attrs"]:
+        way["attrs"]['source'] = sourcestr
+
     for prop in way["attrs"]:
-        pname = str(prop)
-        if pname[0] == "_":
+        if type(prop) != str:# or prop[0] == "_":
             continue
         ElementTree.SubElement(node, "tag",
-                { "k": pname, "v": str(way["attrs"][prop]) })
+                { "k": prop, "v": str(way["attrs"][prop]) })
 
     for nd in way["nd"]:
         ElementTree.SubElement(node, "nd", { "ref": finalnodes[nd]["_id"] })
+finalnodes = None
+finalways = None
 
 sys.stderr.write("Writing to file...\n")
 
