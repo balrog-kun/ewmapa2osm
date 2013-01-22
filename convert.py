@@ -295,6 +295,46 @@ layers = {
         "use": 1,
         "default": { "building": "yes", "building:fireproof": "yes" },
     },
+    "EBUPP_L_4": {
+        "type": "spatial",
+        "name": "Nieudokumentowana warstwa, do sprawdzenia",
+        "use": 1,
+    },
+    "EBUPP_L_5": {
+        "type": "spatial",
+        "name": "Nieudokumentowana warstwa, do sprawdzenia",
+        "use": 1,
+    },
+    "EBUPP_L_6": {
+        "type": "spatial",
+        "name": "Nieudokumentowana warstwa, do sprawdzenia",
+        "use": 1,
+    },
+    "EBUPP_L_7": {
+        "type": "spatial",
+        "name": "Nieudokumentowana warstwa, do sprawdzenia",
+        "use": 1,
+    },
+    "EBUPP_L_8": {
+        "type": "spatial",
+        "name": "Nieudokumentowana warstwa, do sprawdzenia",
+        "use": 1,
+    },
+    "EBUPP_L_9": {
+        "type": "spatial",
+        "name": "Nieudokumentowana warstwa, do sprawdzenia",
+        "use": 1,
+    },
+    "EBUPP_L_10": {
+        "type": "spatial",
+        "name": "Nieudokumentowana warstwa, do sprawdzenia",
+        "use": 1,
+    },
+    "EBUPP_L_11": {
+        "type": "spatial",
+        "name": "Nieudokumentowana warstwa, do sprawdzenia",
+        "use": 1,
+    },
     "EBUPO_L_0": {
         "type": "spatial",
         "name": "Obrys budynku nieognioodpornego, podpory, podcienia " + \
