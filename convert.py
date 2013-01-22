@@ -143,15 +143,15 @@ types = {
     },
     "SWT": {
         "description:pl": "Świetlik do podziemia",
-        "fixme": "yes",
+        "fixme1": "yes",
     },
     "WRU": {
-        "description:pl": "Warstwica usupełniająca",
-        "fixme": "yes",
+        "description:pl": "Warstwica uzupełniająca",
+        "fixme1": "yes",
     },
     "WSQ": {
         "description:pl": "Szczyt skarpy nieumocnionej",
-        "fixme": "yes",
+        "fixme1": "yes",
     },
 }
 
@@ -702,17 +702,17 @@ def add_entity(attrs):
                 sys.stderr.write("Unknown style " + str(stylestr) +
                         " for line " + repr(attrs) +
                         " at line " + str(lnum) + "\n")
-                attrs["note"] = "unknown style " + str(stylestr)
+                attrs["fixme2"] = "unknown style " + str(stylestr)
         elif 2 in attrs:
             stylestr = attrs.pop(2)
             if stylestr in types:
                 style.update(types[stylestr])
-                style["ewmapa:kod_znakowy"] = stylestr
+                #style["ewmapa:kod_znakowy"] = stylestr
             else:
                 sys.stderr.write("Unknown style " + str(stylestr) +
                         " for line " + repr(attrs) +
                         " at line " + str(lnum) + "\n")
-                attrs["note"] = "unknown style " + str(stylestr)
+                attrs["fixme2"] = "unknown style " + str(stylestr)
         else:
             #sys.stderr.write("No style information for line " + repr(attrs) +
             #        " at line " + str(lnum) + "\n")
@@ -1292,7 +1292,7 @@ for i in finalways:
         newtags.update(a)
     attrs.update(newtags)
     if conflicts:
-        attrs['note3'] = 'Conflicting tags: ' + str(list(conflicts.keys()))
+        attrs['fixme4'] = 'Conflicting tags: ' + str(list(conflicts.keys()))
 
 sys.stderr.write("Assigning ids and transforming coordinates to lat/lon...\n")
 
@@ -1363,7 +1363,7 @@ for wayid in finalways:
         way["attrs"]['source'] = sourcestr
 
     for prop in way["attrs"]:
-        if type(prop) != str:# or prop[0] == "_":
+        if type(prop) != str or prop[0] == "_":
             continue
         ElementTree.SubElement(node, "tag",
                 { "k": prop, "v": str(way["attrs"][prop]) })
