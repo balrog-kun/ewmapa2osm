@@ -832,7 +832,7 @@ for arr in [ segments, points ]:
             p1 = attrs["_p1"].split("x")
             p1 = ( float(p1[0]), float(p1[1]) )
             p0 = ( (p0[0] + p1[0]) * 0.5, (p0[1] + p1[1]) * 0.5 )
-        mindist = 800 # 0.8km in parallel axis
+        mindist = 10000
         street = None
         for sp, sa, sname in streets:
             adiff = sa - a
@@ -840,8 +840,9 @@ for arr in [ segments, points ]:
                 adiff -= 360.0
             while adiff < -100.0:
                 adiff += 360.0
-            if (adiff > 15.0 or adiff < -15.0) and \
-                    (adiff < 180 - 15.0 or adiff > 180 + 15.0):
+            tol = 15.0 # Angle difference tolerance
+            if (adiff > tol or adiff < -tol) and \
+                    (adiff < 180 - tol or adiff > 180 + tol):
                 continue
 
             rad = math.radians(sa)
@@ -853,9 +854,14 @@ for arr in [ segments, points ]:
 
             par_dist = (sp[0] - p0[0]) * -math.cos(rad) - \
                     (sp[1] - p0[1]) * math.sin(rad)
-            if abs(par_dist) < mindist and \
-                    abs(per_dist) < 150: # 150m perpendicular distance
-                mindist = abs(par_dist)
+            # 120m perpendicular distance,
+            # 0.8km parallel distance.
+            if abs(per_dist) >= 120 or abs(par_dist) >= 800:
+                continue
+            dist = abs(per_dist) * 3 + abs(par_dist) + \
+                    10 * abs(abs(adiff - 90) - 90)
+            if dist < mindist:
+                mindist = dist
                 street = sname
         if street is not None:
             attrs["addr:street"] = street
