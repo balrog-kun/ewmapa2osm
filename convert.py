@@ -940,10 +940,11 @@ for layer in segments:
             bbox[3] = p[1]
 bbox = [ bbox[0] - 10, bbox[1] - 10, bbox[2] + 10, bbox[3] + 10 ]
 
-xsize, ysize = 20, 20 # 20m x 20m
+xsize, ysize = 100, 100 # 100m x 100m
 yres = int((bbox[2] - bbox[0] + 200) / xsize)
 def add_seg_to_idx(seg):
-    p = seg["_p0f"]
+    p = ( (seg["_p0f"][0] + seg["_p1f"][0]) * 0.5,
+            (seg["_p0f"][1] + seg["_p1f"][1]) * 0.5 )
     x0 = int((p[0] - xsize * 0.5 - bbox[0]) / xsize)
     x1 = int((p[0] + xsize * 0.5 - bbox[0]) / xsize)
     y0 = int((p[1] - ysize * 0.5 - bbox[1]) / ysize)
@@ -1030,6 +1031,7 @@ for layer in segments:
 
                 toappend.append(newseg)
                 add_seg_to_idx(newseg)
+                adjacency_cnt[seg[pn[:3]]] += 2
     #segments[layer] += toappend
     for seg in toappend:
         segments[seg['_seglyr']].append(seg)
