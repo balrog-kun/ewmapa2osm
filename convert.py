@@ -899,8 +899,24 @@ for arr in [ segments, points ]:
             if t in buse:
                 attrs.update(buse[t])
             elif t:
-                attrs['fixme2'] = 'unknown function ' + str(t)
+                attrs['fixme3'] = 'unknown function ' + str(t)
             attrs.update(levels_attrs)
+
+sys.stderr.write("Removing overlapping segments...\n")
+
+segs = {}
+for layer in segments:
+    i = 0
+    while i < len(segments[layer]):
+        s = segments[layer][i]
+        idx = s["_p0"] + 'x' + s["_p1"]
+        if idx in segs:
+            segs[idx].update(s)
+            del segments[layer][i]
+        else:
+            segs[idx] = s
+            i += 1
+segs = None
 
 sys.stderr.write("Building a segment index...\n")
 
