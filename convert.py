@@ -966,17 +966,32 @@ for layer in segments:
 
 sys.stderr.write("Merging close nodes and segments...\n")
 
+adjacency_cnt = {}
+for layer in segments:
+    for seg in segments[layer]:
+        for pn in [ '_p0', '_p1' ]:
+            p = seg[pn]
+            if p not in adjacency_cnt:
+                adjacency_cnt[p] = 0
+            adjacency_cnt[p] += 1
+
 epsilon = 0.05 # 5cm
+noconn_epsilon = 0.6 # 60cm
 for layer in segments:
     toappend = []
     for seg in segments[layer]:
         for pn in [ '_p0f', '_p1f' ]:
             p = seg[pn]
+            cnt = adjacency_cnt[seg[pn[:3]]]
             x = int((p[0] - bbox[0]) / xsize)
             y = int((p[1] - bbox[1]) / ysize)
             j = x + y * yres
             if j not in idx:
                 continue
+            mindist = noconn_epsilon
+            if cnt > 1:
+                mindist = epsilon
+            minseg = []
             for seg2 in idx[j]:
                 if seg is seg2:
                     continue
@@ -984,14 +999,28 @@ for layer in segments:
                 ab_dist = math.hypot(a[0] - b[0], a[1] - b[1])
                 ap_dist = math.hypot(a[0] - p[0], a[1] - p[1])
                 bp_dist = math.hypot(b[0] - p[0], b[1] - p[1])
-                if ap_dist > ab_dist - epsilon / 2:
+                if ab_dist < epsilon:
                     continue
-                if bp_dist > ab_dist - epsilon / 2:
-                    continue
+                if cnt == 1:
+                    if ap_dist > ab_dist + epsilon / 2:
+                        continue
+                    if bp_dist > ab_dist + epsilon / 2:
+                        continue
+                else:
+                    if ap_dist > ab_dist - epsilon / 2:
+                        continue
+                    if bp_dist > ab_dist - epsilon / 2:
+                        continue
                 line_dist = abs((p[0] - a[0]) * (b[1] - a[1]) -
                         (p[1] - a[1]) * (b[0] - a[0])) / ab_dist
-                if line_dist > epsilon:
+                if line_dist > mindist + 0.01:
                     continue
+                if line_dist > mindist - 0.01 or line_dist < epsilon:
+                    minseg.append(seg2)
+                    continue
+                mindist = line_dist
+                minseg = [ seg2 ]
+            for seg2 in minseg:
                 newseg = {}
                 newseg.update(seg2)
                 seg2['_p1'] = seg[pn[:3]]
@@ -1007,7 +1036,7 @@ for layer in segments:
 
 idx = None
 
-sys.stderr.write("Removing overlapping segments...\n")
+sys.stderr.write("Removing overlapping segments again...\n")
 
 segs = {}
 for layer in segments:
