@@ -660,6 +660,11 @@ attrs = {}
 segments = {}
 points = {}
 
+def rnd(numstr):
+    pos = numstr.find('.')
+    if pos >= 0:
+        return numstr[:pos + 4] # mm max precision
+    return numstr
 def add_entity(attrs):
     etype = attrs.pop("type")
     layer = attrs.pop(8)
@@ -670,15 +675,15 @@ def add_entity(attrs):
     obj = None
 
     if 30 in attrs:
-        p0 = ( attrs.pop(10), attrs.pop(20), attrs.pop(30) )
+        p0 = ( rnd(attrs.pop(10)), rnd(attrs.pop(20)), rnd(attrs.pop(30)) )
     else:
-        p0 = ( attrs.pop(10), attrs.pop(20) )
+        p0 = ( rnd(attrs.pop(10)), rnd(attrs.pop(20)) )
     p1 = None
     if 11 in attrs:
         if 31 in attrs:
-            p1 = ( attrs.pop(11), attrs.pop(21), attrs.pop(31) )
+            p1 = ( rnd(attrs.pop(11)), rnd(attrs.pop(21)), rnd(attrs.pop(31)) )
         else:
-            p1 = ( attrs.pop(11), attrs.pop(21) )
+            p1 = ( rnd(attrs.pop(11)), rnd(attrs.pop(21)) )
     if 39 in attrs:
         thickness = attrs.pop(39)
     #if 40 in attrs:
@@ -902,6 +907,71 @@ for arr in [ segments, points ]:
                 attrs['fixme3'] = 'unknown function ' + str(t)
             attrs.update(levels_attrs)
 
+sys.stderr.write("Merging close nodes...\n")
+
+bbox = [ 100000000, 100000000, 0, 0 ]
+for layer in segments:
+    for seg in segments[layer]:
+        p = seg["_p1"].split("x")
+        p = ( float(p[0]), float(p[1]) )
+        if p[0] < bbox[0]:
+            bbox[0] = p[0]
+        if p[1] < bbox[1]:
+            bbox[1] = p[1]
+        if p[0] > bbox[2]:
+            bbox[2] = p[0]
+        if p[1] > bbox[3]:
+            bbox[3] = p[1]
+bbox = [ bbox[0] - 10, bbox[1] - 10, bbox[2] + 10, bbox[3] + 10 ]
+
+idx = {}
+
+xsize, ysize = 20, 20 # 30m x 30m
+yres = int((bbox[2] - bbox[0] + 200) / xsize)
+epsilon = 0.02 # 2cm
+for layer in segments:
+    for seg in segments[layer]:
+        for pn in [ '_p0', '_p1' ]:
+            p = seg[pn].split("x")
+            p = ( float(p[0]), float(p[1]) )
+
+            x = int((p[0] - bbox[0]) / xsize)
+            y = int((p[1] - bbox[1]) / ysize)
+            j = x + y * yres
+
+            pts = []
+            if j in idx:
+                pts = idx[j]
+
+            merged = 0
+            for pt in pts:
+                if math.hypot(pt[0] - p[0], pt[1] - p[1]) < epsilon:
+                    seg[pn] = pt[2]
+                    seg[pn + 'f'] = ( pt[0], pt[1] )
+                    merged = 1
+                    break
+            if merged:
+                continue
+            seg[pn + 'f'] = p
+
+            w = ( p[0], p[1], seg[pn] )
+            x0 = int((p[0] - xsize * 0.5 - bbox[0]) / xsize)
+            x1 = int((p[0] + xsize * 0.5 - bbox[0]) / xsize)
+            y0 = int((p[1] - ysize * 0.5 - bbox[1]) / ysize)
+            y1 = int((p[1] + ysize * 0.5 - bbox[1]) / ysize)
+            if x0 + y0 * yres not in idx:
+                idx[x0 + y0 * yres] = []
+            idx[x0 + y0 * yres].append(w)
+            if x0 + y1 * yres not in idx:
+                idx[x0 + y1 * yres] = []
+            idx[x0 + y1 * yres].append(w)
+            if x1 + y0 * yres not in idx:
+                idx[x1 + y0 * yres] = []
+            idx[x1 + y0 * yres].append(w)
+            if x1 + y1 * yres not in idx:
+                idx[x1 + y1 * yres] = []
+            idx[x1 + y1 * yres].append(w)
+
 sys.stderr.write("Removing overlapping segments...\n")
 
 segs = {}
@@ -909,7 +979,10 @@ for layer in segments:
     i = 0
     while i < len(segments[layer]):
         s = segments[layer][i]
-        idx = s["_p0"] + 'x' + s["_p1"]
+        if s["_p0"] > s["_p1"]:
+            idx = s["_p0"] + 'x' + s["_p1"]
+        else:
+            idx = s["_p1"] + 'x' + s["_p0"]
         if idx in segs:
             segs[idx].update(s)
             del segments[layer][i]
