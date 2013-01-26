@@ -1319,6 +1319,14 @@ nodes = None
 
 sys.stderr.write("Building shape index...\n")
 
+def area(poly):
+    a = 0
+    j = poly[-1]
+    for i in poly:
+        a += j[0] * i[1] - i[0] * j[1]
+        j = i
+    return 0.5 * abs(a)
+
 idx = {}
 
 xsize, ysize = 100, 100 # 100m x 100m
@@ -1329,6 +1337,7 @@ for w in finalways:
             [ p.split('x') for p in nd ] ]
     p = floatnd[0]
     finalways[w]['floatnd'] = floatnd
+    finalways[w]['area'] = area(floatnd)
     x0 = int((p[0] - xsize * 0.5 - bbox[0]) / xsize)
     x1 = int((p[0] + xsize * 0.5 - bbox[0]) / xsize)
     y0 = int((p[1] - ysize * 0.5 - bbox[1]) / ysize)
@@ -1373,27 +1382,26 @@ for arr in [ segments, points ]:
             if "_p1" in attrs:
                 p1 = attrs["_p1"].split("x")
                 p1 = ( float(p1[0]), float(p1[1]) )
-                p.append(p1)
+                #p.append(p1)
                 p0 = ( (p0[0] + p1[0]) * 0.5, (p0[1] + p1[1]) * 0.5 )
-                p.append(p0)
+                #p.append(p0)
+                p = [ p0 ]
 
             poly = None
             x = int((p0[0] - bbox[0]) / xsize)
             y = int((p0[1] - bbox[1]) / ysize)
             j = x + y * yres
+            maxarea = 100000000
             for pt in p:
                 if j not in idx:
                     continue
                 for i in idx[j]:
                     nd = finalways[i]["nd"]
                     floatnd = finalways[i]["floatnd"]
-                    if nd[0] == nd[-1] and point_in_poly(pt, floatnd):
+                    if nd[0] == nd[-1] and finalways[i]['area'] < maxarea and \
+                            point_in_poly(pt, floatnd):
                         poly = i
-                        #print("we determined " + repr(pt) + " is in " +
-                        #        repr(nd))
-                        break
-                if poly:
-                    break
+                        maxarea = finalways[i]['area']
             if not poly:
                 finalnodes[attrs['_p0']] = attrs
                 continue
@@ -1492,6 +1500,9 @@ for nodeid in finalnodes:
 
 for wayid in finalways:
     way = finalways[wayid]
+
+    if "add_tags" not in way and way['area'] > 200:
+        continue
 
     node = ElementTree.SubElement(root, "way", {
         "version": str(1),
