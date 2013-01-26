@@ -157,7 +157,7 @@ types = {
 
 layers = {
     "EADOD_T_0": {
-        "type": "attrib",
+        "type": "text",
         "name": "Nazwa ulicy, placu, miejscowości",
         "use": 1,
     },
@@ -544,7 +544,7 @@ buse = {
     },
     "k": {
         "building:use:pl": "Oświaty, nauki, sportowy lub kultury, " + \
-		"kultu religijnego",
+                "kultu religijnego",
         "building": "education",
         "building:levels": "1",
     },
@@ -605,17 +605,17 @@ buse = {
         "building:use:pl": "Waga",
         "building": "scales",
         "landuse": "industrial",
-	"building:levels": '1',
+        "building:levels": '1',
     },
     "ciepl": {
         "building:use:pl": "Szklarnia, cieplarnia",
         "building": "greenhouse",
-	"building:levels": '1',
+        "building:levels": '1',
     },
     "ciepl.": {
         "building:use:pl": "Szklarnia, cieplarnia",
         "building": "greenhouse",
-	"building:levels": '1',
+        "building:levels": '1',
     },
     "rmp": {
         "building:use:pl": "Rampa",
