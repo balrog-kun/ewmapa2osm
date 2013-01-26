@@ -724,10 +724,12 @@ def add_entity(attrs):
             #attrs["note"] = "no style information"
             pass
         attrs.update(style)
-        if etype != "LINE":
-            attrs["geometry"] = etype.lower()
-            if 40 in attrs:
-                attrs["radius"] = attrs.pop(40)
+        if 40 in attrs:
+            attrs["_radius"] = attrs.pop(40)
+        if 50 in attrs:
+            attrs["_startangle"] = attrs.pop(50)
+        if 51 in attrs:
+            attrs["_endangle"] = attrs.pop(51)
     elif etype == "TEXT":
         attrs["_layer"] = layers[layer]["name"]
         attrs["_name"] = attrs.pop(1)
@@ -748,18 +750,64 @@ def add_entity(attrs):
                 " at line " + str(lnum) + "\n")
         return
 
+    if etype == "CIRCLE" or etype == "ARC":
+        ctr = ( float(p0[0]), float(p0[1]) )
+        radius = float(attrs['_radius'])
+        if '_startangle' in attrs and '_endangle' in attrs:
+            a0 = float(attrs['_startangle'])
+            a1 = float(attrs['_endangle'])
+        else:
+            a0, a1 = 0.0, 360.0
+
+        a = a1 - a0
+        if a < 0.0:
+            a += 360.0
+
+        # TODO: we should also take into account other line segments in the
+        # file that may start or end at some point on the arc.
+
+        maxdist = 0.3 # 30cm between approximated and real arc
+
+        # maxdist == radius * (1.0 -
+        #     math.cos(math.radians(arcangle / segmentcount / 2)))
+        if radius < maxdist:
+            segcnt = 2
+        else:
+            segcnt = int(a / 2 / math.degrees(math.acos(1.0 -
+                    maxdist / radius)))
+        if a < 180.0:
+            segcnt = max(segcnt, 3)
+        else:
+            segcnt = max(segcnt, 5)
+
+        pts = []
+        for i in range(0, segcnt + 1):
+            angle = math.radians(a0 + a * i / segcnt)
+            pts.append(( str(ctr[0] + radius * math.cos(angle)),
+                    str(ctr[1] + radius * math.sin(angle)) ))
+    else:
+        pts = [ p0 ]
+        if p1:
+            pts.append(p1)
+
     arr = points
-    if p1:
+    if len(pts) > 1:
         arr = segments
     if layer not in arr:
         arr[layer] = []
 
-    attrs["_p0"] = p0[0] + "x" + p0[1]
-    if p1:
-        attrs["_p1"] = p1[0] + "x" + p1[1]
-        attrs["_seglyr"] = layer
+    for i in range(0, max(len(pts) - 1, 1)):
+        seg = {}
+        seg.update(attrs)
 
-    arr[layer].append(attrs)
+        p0 = pts[i + 0]
+        seg["_p0"] = p0[0] + "x" + p0[1]
+        if i < len(pts) - 1:
+            p1 = pts[i + 1]
+            seg["_p1"] = p1[0] + "x" + p1[1]
+
+        seg["_seglyr"] = layer
+        arr[layer].append(seg)
 
 sys.stderr.write("Reading in text and segments...\n")
 
@@ -1301,8 +1349,8 @@ for layer in segments:
                 "attrs": attrs,
             }
 if 0:
-    finalnodes = {}
-    finalways = {}
+    #finalnodes = {}
+    #finalways = {}
     for layer in segments:
         for seg in segments[layer]:
             if "_d0" in seg or "_d0" in seg:
