@@ -845,7 +845,7 @@ for arr in [ segments, points ]:
                 adiff -= 360.0
             while adiff < -100.0:
                 adiff += 360.0
-            tol = 15.0 # Angle difference tolerance
+            tol = 25.0 # Angle difference tolerance
             if (adiff > tol or adiff < -tol) and \
                     (adiff < 180 - tol or adiff > 180 + tol):
                 continue
@@ -863,7 +863,7 @@ for arr in [ segments, points ]:
             # 0.8km parallel distance.
             if abs(per_dist) >= 120 or abs(par_dist) >= 800:
                 continue
-            dist = abs(per_dist) * 3 + abs(par_dist) + \
+            dist = abs(per_dist) * 6 + abs(par_dist) + \
                     10 * abs(abs(adiff - 90) - 90)
             if dist < mindist:
                 mindist = dist
