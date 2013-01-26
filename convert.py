@@ -994,46 +994,27 @@ segs = None
 sys.stderr.write("Building a segment index...\n")
 
 idx = {}
-bbox = [ 100000000, 100000000, 0, 0 ]
-for layer in segments:
-    for seg in segments[layer]:
-        p = seg["_p1"].split("x")
-        p = ( float(p[0]), float(p[1]) )
-        seg['_p1f'] = p
-        p = seg["_p0"].split("x")
-        p = ( float(p[0]), float(p[1]) )
-        seg['_p0f'] = p
-        if p[0] < bbox[0]:
-            bbox[0] = p[0]
-        if p[1] < bbox[1]:
-            bbox[1] = p[1]
-        if p[0] > bbox[2]:
-            bbox[2] = p[0]
-        if p[1] > bbox[3]:
-            bbox[3] = p[1]
-bbox = [ bbox[0] - 10, bbox[1] - 10, bbox[2] + 10, bbox[3] + 10 ]
 
-xsize, ysize = 100, 100 # 100m x 100m
+xsize, ysize = 30, 30 # 30m x 30m
 yres = int((bbox[2] - bbox[0] + 200) / xsize)
 def add_seg_to_idx(seg):
-    p = ( (seg["_p0f"][0] + seg["_p1f"][0]) * 0.5,
-            (seg["_p0f"][1] + seg["_p1f"][1]) * 0.5 )
-    x0 = int((p[0] - xsize * 0.5 - bbox[0]) / xsize)
-    x1 = int((p[0] + xsize * 0.5 - bbox[0]) / xsize)
-    y0 = int((p[1] - ysize * 0.5 - bbox[1]) / ysize)
-    y1 = int((p[1] + ysize * 0.5 - bbox[1]) / ysize)
-    if x0 + y0 * yres not in idx:
-        idx[x0 + y0 * yres] = []
-    idx[x0 + y0 * yres].append(seg)
-    if x0 + y1 * yres not in idx:
-        idx[x0 + y1 * yres] = []
-    idx[x0 + y1 * yres].append(seg)
-    if x1 + y0 * yres not in idx:
-        idx[x1 + y0 * yres] = []
-    idx[x1 + y0 * yres].append(seg)
-    if x1 + y1 * yres not in idx:
-        idx[x1 + y1 * yres] = []
-    idx[x1 + y1 * yres].append(seg)
+    if seg["_p0f"][0] < seg["_p1f"][0]:
+        x0 = int((seg["_p0f"][0] - xsize * 0.2 - bbox[0]) / xsize)
+        x1 = int((seg["_p1f"][0] + xsize * 0.2 - bbox[0]) / xsize)
+    else:
+        x0 = int((seg["_p1f"][0] - xsize * 0.2 - bbox[0]) / xsize)
+        x1 = int((seg["_p0f"][0] + xsize * 0.2 - bbox[0]) / xsize)
+    if seg["_p0f"][1] < seg["_p1f"][1]:
+        y0 = int((seg["_p0f"][1] - ysize * 0.2 - bbox[1]) / ysize)
+        y1 = int((seg["_p1f"][1] + ysize * 0.2 - bbox[1]) / ysize)
+    else:
+        y0 = int((seg["_p1f"][1] - ysize * 0.2 - bbox[1]) / ysize)
+        y1 = int((seg["_p0f"][1] + ysize * 0.2 - bbox[1]) / ysize)
+    for xx in range(x0, x1 + 1):
+        for yy in range(y0, y1 + 1):
+            if xx + yy * yres not in idx:
+                idx[xx + yy * yres] = []
+            idx[xx + yy * yres].append(seg)
 for layer in segments:
     for seg in segments[layer]:
         add_seg_to_idx(seg)
@@ -1049,14 +1030,17 @@ for layer in segments:
                 adjacency_cnt[p] = 0
             adjacency_cnt[p] += 1
 
-epsilon = 0.05 # 5cm
-noconn_epsilon = 0.6 # 60cm
+epsilon = 0.06 # 6cm
+noconn_epsilon = 0.5 # 50cm
 for layer in segments:
+    if layers[layer]['type'] != 'spatial':
+        continue
     toappend = []
     for seg in segments[layer]:
-        for pn in [ '_p0f', '_p1f' ]:
-            p = seg[pn]
-            cnt = adjacency_cnt[seg[pn[:3]]]
+        for pn in [ ( '_p0f', '_p1f' ), ( '_p1f', '_p0f' ) ]:
+            p = seg[pn[0]]
+            cnt = adjacency_cnt[seg[pn[0][:3]]]
+            p2 = seg[pn[1]]
             x = int((p[0] - bbox[0]) / xsize)
             y = int((p[1] - bbox[1]) / ysize)
             j = x + y * yres
@@ -1070,25 +1054,43 @@ for layer in segments:
                 if seg is seg2:
                     continue
                 a, b = seg2['_p0f'], seg2['_p1f']
-                ab_dist = math.hypot(a[0] - b[0], a[1] - b[1])
-                ap_dist = math.hypot(a[0] - p[0], a[1] - p[1])
-                bp_dist = math.hypot(b[0] - p[0], b[1] - p[1])
-                if ab_dist < epsilon:
+                #ab_dist = math.hypot(a[0] - b[0], a[1] - b[1])
+                #ap_dist = math.hypot(a[0] - p[0], a[1] - p[1])
+                #bp_dist = math.hypot(b[0] - p[0], b[1] - p[1])
+                ab_dist_sq = (a[0] - b[0]) * (a[0] - b[0]) + \
+                        (a[1] - b[1]) * (a[1] - b[1])
+                ap_dist_sq = (a[0] - p[0]) * (a[0] - p[0]) + \
+                        (a[1] - p[1]) * (a[1] - p[1])
+                bp_dist_sq = (b[0] - p[0]) * (b[0] - p[0]) + \
+                        (b[1] - p[1]) * (b[1] - p[1])
+                if ab_dist_sq < 0.003:
                     continue
-                if cnt == 1:
-                    if ap_dist > ab_dist + epsilon / 2:
-                        continue
-                    if bp_dist > ab_dist + epsilon / 2:
-                        continue
-                else:
-                    if ap_dist > ab_dist - epsilon / 2:
-                        continue
-                    if bp_dist > ab_dist - epsilon / 2:
-                        continue
+                #if cnt == 1:
+                #    if ap_dist > ab_dist + epsilon / 2:
+                #        continue
+                #    if bp_dist > ab_dist + epsilon / 2:
+                #        continue
+                #else:
+                #    if ap_dist > ab_dist - epsilon / 2:
+                #        continue
+                #    if bp_dist > ab_dist - epsilon / 2:
+                #        continue
+                if ap_dist_sq > ab_dist_sq or ap_dist_sq < 0.000001:
+                    continue
+                if bp_dist_sq > ab_dist_sq or bp_dist_sq < 0.000001:
+                    continue
+                ab_dist = math.sqrt(ab_dist_sq)
                 line_dist = abs((p[0] - a[0]) * (b[1] - a[1]) -
                         (p[1] - a[1]) * (b[0] - a[0])) / ab_dist
                 if line_dist > mindist + 0.01:
                     continue
+                if line_dist > epsilon:
+                    seg_len = math.hypot(p2[0] - p[0], p2[1] - p[1])
+                    p2_dist = abs((p2[0] - a[0]) * (b[1] - a[1]) -
+                            (p2[1] - a[1]) * (b[0] - a[0])) / ab_dist
+                    if p2_dist < line_dist + seg_len * 0.9 and \
+                            (cnt > 1 or p2_dist < noconn_epsilon):
+                        continue
                 if line_dist > mindist - 0.01 or line_dist < epsilon:
                     minseg.append(seg2)
                     continue
@@ -1097,14 +1099,14 @@ for layer in segments:
             for seg2 in minseg:
                 newseg = {}
                 newseg.update(seg2)
-                seg2['_p1'] = seg[pn[:3]]
-                newseg['_p0'] = seg[pn[:3]]
+                seg2['_p1'] = seg[pn[0][:3]]
+                newseg['_p0'] = seg[pn[0][:3]]
                 seg2['_p1f'] = p
                 newseg['_p0f'] = p
 
                 toappend.append(newseg)
                 add_seg_to_idx(newseg)
-                adjacency_cnt[seg[pn[:3]]] += 2
+                adjacency_cnt[seg[pn[0][:3]]] += 2
     #segments[layer] += toappend
     for seg in toappend:
         segments[seg['_seglyr']].append(seg)
@@ -1118,7 +1120,10 @@ for layer in segments:
     i = 0
     while i < len(segments[layer]):
         s = segments[layer][i]
-        idx = s["_p0"] + 'x' + s["_p1"]
+        if s["_p0"] > s["_p1"]:
+            idx = s["_p0"] + 'x' + s["_p1"]
+        else:
+            idx = s["_p1"] + 'x' + s["_p0"]
         if idx in segs:
             segs[idx].update(s)
             del segments[layer][i]
