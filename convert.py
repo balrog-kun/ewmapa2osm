@@ -1271,15 +1271,35 @@ for layer in segments:
                 continue
 
             for seg2, ndir, node in poly:
-                if len(poly) > 3:
-                    finalnodes[node] = {}
                 seg2[ndir] = 0
-            if len(poly) > 3:
-                nd = [ node for s, n, node in poly ]
-                finalways[",".join(sorted(nd))] = {
-                    "nd": nd + [ nd[0] ],
-                    "attrs": seg,
-                }
+            if len(poly) <= 3:
+                continue
+
+            for seg2, ndir, node in poly:
+                finalnodes[node] = {}
+            nd = [ node for s, n, node in poly ]
+
+            attrs = {}
+            for seg2, ndir, node in poly:
+                for attr in seg2:
+                    if attr not in attrs:
+                        attrs[attr] = {}
+                    if seg2[attr] not in attrs[attr]:
+                        attrs[attr][seg2[attr]] = 0
+                    attrs[attr][seg2[attr]] += 1
+            for attr in attrs:
+                maxscore = 0
+                maxval = None
+                for val in attrs[attr]:
+                    if attrs[attr][val] > maxscore:
+                        maxscore = attrs[attr][val]
+                        maxval = val
+                attrs[attr] = maxval
+
+            finalways[",".join(sorted(nd))] = {
+                "nd": nd + [ nd[0] ],
+                "attrs": attrs,
+            }
 if 0:
     finalnodes = {}
     finalways = {}
@@ -1300,19 +1320,6 @@ nodes = None
 sys.stderr.write("Building shape index...\n")
 
 idx = {}
-bbox = [ 100000000, 100000000, 0, 0 ]
-for n in finalnodes:
-    p = n.split("x")
-    p = ( float(p[0]), float(p[1]) )
-    if p[0] < bbox[0]:
-        bbox[0] = p[0]
-    if p[1] < bbox[1]:
-        bbox[1] = p[1]
-    if p[0] > bbox[2]:
-        bbox[2] = p[0]
-    if p[1] > bbox[3]:
-        bbox[3] = p[1]
-bbox = [ bbox[0] - 10, bbox[1] - 10, bbox[2] + 10, bbox[3] + 10 ]
 
 xsize, ysize = 100, 100 # 100m x 100m
 yres = int((bbox[2] - bbox[0] + 200) / xsize)
