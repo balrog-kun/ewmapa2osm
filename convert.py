@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 # vim: fileencoding=utf-8 encoding=utf-8 et sw=4
-# Copyright (c) 2011  Andrzej Zaborowski
+# BSD license, 2011 Andrzej Zaborowski
 
 import sys
 import subprocess
