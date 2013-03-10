@@ -5,11 +5,11 @@
 filename = 'BUDYNKI/bud+adr_bedzin.dxf'
 sourcestr = 'PODGIK Będzin'
 encoding = 'latin2'
-road_labels = 'GEPADR_O'
-housenumber_labels = 'GSLOUL_O'
+road_labels = 'GSLOUL_O'
+housenumber_labels = 'GEPADR_O'
 
 types = {
-    "Continuous": {},
+    "CONTINUOUS": {},
 }
 
 layers = {

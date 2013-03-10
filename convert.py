@@ -699,6 +699,8 @@ for arr in [ segments, points ]:
     # TODO: powinnismy rozroznic miedzy numerem nawyzszej kondygnacji i
     # liczba kondygnacji
     for layer in arr:
+        if layer == housenumber_labels:
+            continue
         for attrs in arr[layer]:
             if "_name" not in attrs:
                 continue
