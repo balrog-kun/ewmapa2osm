@@ -10,6 +10,7 @@ import xml.etree.cElementTree as ElementTree
 import codecs
 
 from format_ewmapa_egib import *
+#from format_powiat_gorzow import *
 
 types = {
     "": {}, "1": {}, "2": {}, "10": {},
