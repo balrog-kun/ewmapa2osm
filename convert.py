@@ -9,9 +9,6 @@ import math
 import xml.etree.cElementTree as ElementTree
 import codecs
 
-from format_ewmapa_egib import *
-#from format_powiat_gorzow import *
-
 types = {
     "": {}, "1": {}, "2": {}, "10": {},
     "BUI": {
@@ -355,6 +352,9 @@ buse = {
         "building:levels": '0',
     },
 }
+
+from format_ewmapa_egib import *
+#from format_powiat_gorzow import *
 
 input = codecs.open(filename, 'r', encoding)
 
