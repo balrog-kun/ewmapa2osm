@@ -355,6 +355,7 @@ buse = {
 
 from format_ewmapa_egib import *
 #from format_powiat_gorzow import *
+#from format_powiat_bedzin import *
 
 input = codecs.open(filename, 'r', encoding)
 
