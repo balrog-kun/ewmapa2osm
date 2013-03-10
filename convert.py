@@ -366,11 +366,22 @@ attrs = {}
 segments = {}
 points = {}
 
-def rnd(numstr):
-    pos = numstr.find('.')
+def rnd(attrs, numstr):
+    if 1000 + numstr in attrs:
+        del attrs[numstr]
+        ret = []
+        for val in attrs.pop(1000 + numstr):
+            pos = val.find('.')
+            if pos >= 0:
+                ret.append(val[:pos + 4]) # mm max precision
+            else:
+                ret.append(val)
+        return ret
+    val = attrs.pop(numstr)
+    pos = val.find('.')
     if pos >= 0:
-        return numstr[:pos + 4] # mm max precision
-    return numstr
+        return val[:pos + 4] # mm max precision
+    return val
 def add_entity(attrs):
     etype = attrs.pop("type")
     layer = attrs.pop(8)
@@ -381,20 +392,20 @@ def add_entity(attrs):
     obj = None
 
     if 30 in attrs:
-        p0 = ( rnd(attrs.pop(10)), rnd(attrs.pop(20)), rnd(attrs.pop(30)) )
+        p0 = ( rnd(attrs, 10), rnd(attrs, 20), rnd(attrs, 30) )
     else:
-        p0 = ( rnd(attrs.pop(10)), rnd(attrs.pop(20)) )
+        p0 = ( rnd(attrs, 10), rnd(attrs, 20) )
     p1 = None
     if 11 in attrs:
         if 31 in attrs:
-            p1 = ( rnd(attrs.pop(11)), rnd(attrs.pop(21)), rnd(attrs.pop(31)) )
+            p1 = ( rnd(attrs, 11), rnd(attrs, 21), rnd(attrs, 31) )
         else:
-            p1 = ( rnd(attrs.pop(11)), rnd(attrs.pop(21)) )
+            p1 = ( rnd(attrs, 11), rnd(attrs, 21) )
     if 39 in attrs:
         thickness = attrs.pop(39)
 
     if etype == "LINE" or etype == "CIRCLE" or \
-            etype == "ARC" or etype == "POINT":
+            etype == "ARC" or etype == "POINT" or etype == "LWPOLYLINE":
         attrs["ewmapa:warstwa"] = layers[layer]["name"]
         attrs["source"] = sourcestr
         if "source" in layers[layer]:
@@ -516,6 +527,8 @@ def add_entity(attrs):
             angle = math.radians(a0 + a * i / segcnt)
             pts.append(( str(ctr[0] + radius * math.cos(angle)),
                     str(ctr[1] + radius * math.sin(angle)) ))
+    elif etype == "LWPOLYLINE":
+        pts = list(zip(p0[0], p0[1]))
     else:
         pts = [ p0 ]
         if p1:
@@ -574,10 +587,16 @@ for line in input:
             add_entity(attrs)
         attrs = { "type": name }
     else:
-        if etype in attrs and etype != 100:
+        if etype in attrs and etype not in [ 10, 20, 42, 100 ]:
             sys.stderr.write("Tag " + str(etype) + " duplicate in object " +
                     repr(attrs) + " on line " + str(lnum) + "\n")
-        attrs[etype] = name
+        if etype not in attrs:
+            attrs[etype] = name
+        else:
+            ltype = etype + 1000
+            if ltype not in attrs:
+                attrs[ltype] = [ attrs[etype] ]
+            attrs[ltype].append(name)
 
 input.close()
 
