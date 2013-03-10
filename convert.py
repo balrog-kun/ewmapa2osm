@@ -434,6 +434,25 @@ def add_entity(attrs):
         attrs["_text_height"] = attrs.pop(40)
         attrs["_text_rotation"] = attrs.pop(50)
         attrs["_oblique_angle"] = attrs.pop(51)
+    elif etype == "INSERT":
+        attrs["_layer"] = layers[layer]["name"]
+        if 50 in attrs:
+            attrs["_symbol_rotation"] = attrs.pop(50)
+        if 41 in attrs:
+            attrs["_symbol_scale"] = attrs.pop(41)
+        stylestr = attrs.pop(2)
+        if stylestr.startswith('1_'):
+           stylestr = stylestr[2:]
+        elif stylestr.startswith('1'):
+           stylestr = stylestr[1:]
+        if stylestr in types:
+            attrs.update(types[stylestr])
+            #style["ewmapa:kod_znakowy"] = stylestr
+        else:
+            sys.stderr.write("Unknown style " + str(stylestr) +
+                    " for line " + repr(attrs) +
+                    " at line " + str(lnum) + "\n")
+            attrs["fixme2"] = "unknown style " + str(stylestr)
     else:
         sys.stderr.write("Unknown entity type " + etype +
                 " at line " + str(lnum) + "\n")
