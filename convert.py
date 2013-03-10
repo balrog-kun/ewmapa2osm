@@ -99,6 +99,10 @@ types = {
         "boundary": "administrative",
         "admin_level": "8",
     },
+    "PRH": {
+        "description:pl": "Przehaczenie - symbol przynależności do działki",
+        "fixme1": "yes",
+    },
     "BPB": {
         "description:pl": "Przejazd pod budynkiem",
         "tunnel": "yes",
@@ -169,6 +173,24 @@ types = {
     },
     "WSQ": {
         "description:pl": "Szczyt skarpy nieumocnionej",
+        "fixme1": "yes",
+    },
+    "SWJ": {
+        "description:pl": "Strzałka kierunku wjazdu do podziemia",
+        "fixme1": "yes",
+        "oneway": "yes",
+    },
+    "KCI": {
+        "description:pl": "Strzałka kierunku cieku",
+        "fixme1": "yes",
+    },
+    "WSP": {
+        "description:pl": "Punkt określonej wysokości naturalnej terenu",
+        "fixme1": "yes",
+    },
+    "MSZ": {
+        "building:type:pl": "Podpora wielosłupowa przewodu napowietrznego",
+        "power": "pole",
         "fixme1": "yes",
     },
 }
@@ -381,8 +403,8 @@ def add_entity(attrs):
         if "default" in layers[layer]:
             style.update(layers[layer]["default"])
         if 6 in attrs and attrs[6] != 'BYLAYER':
-            stylestr = attrs.pop(6)
-            if stylestr.startswith('1_'):
+            stylestr = attrs.pop(6).upper()
+            if len(stylestr) == 5 and stylestr[1] == '_':
                stylestr = stylestr[2:]
             elif stylestr.startswith('1'):
                stylestr = stylestr[1:]
@@ -395,8 +417,8 @@ def add_entity(attrs):
                         " at line " + str(lnum) + "\n")
                 attrs["fixme2"] = "unknown style " + str(stylestr)
         elif 2 in attrs:
-            stylestr = attrs.pop(2)
-            if stylestr.startswith('1_'):
+            stylestr = attrs.pop(2).upper()
+            if len(stylestr) == 5 and stylestr[1] == '_':
                stylestr = stylestr[2:]
             elif stylestr.startswith('1'):
                stylestr = stylestr[1:]
@@ -441,8 +463,8 @@ def add_entity(attrs):
             attrs["_symbol_rotation"] = attrs.pop(50)
         if 41 in attrs:
             attrs["_symbol_scale"] = attrs.pop(41)
-        stylestr = attrs.pop(2)
-        if stylestr.startswith('1_'):
+        stylestr = attrs.pop(2).upper()
+        if len(stylestr) == 5 and stylestr[1] == '_':
            stylestr = stylestr[2:]
         elif stylestr.startswith('1'):
            stylestr = stylestr[1:]
