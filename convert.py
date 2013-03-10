@@ -454,6 +454,19 @@ def add_entity(attrs):
             attrs["_startangle"] = attrs.pop(50)
         if 51 in attrs:
             attrs["_endangle"] = attrs.pop(51)
+        if etype == 'LWPOLYLINE':
+            closed = 0
+            if 70 in attrs:
+                # TODO: How does Plinegen work?
+                closed = (128 | 1) & int(attrs.pop(70))
+            if closed:
+                attrs['_closed'] = 1
+            if 90 in attrs:
+                l = int(attrs.pop(90))
+                if len(p0[0]) != l or len(p0[1]) != l:
+                    sys.stderr.write("Incorrect polyline length " + str(l) +
+                            " for polyline " + repr(attrs) +
+                            " at line " + str(lnum) + "\n")
     elif etype == "TEXT":
         attrs["_layer"] = layers[layer]["name"]
         attrs["_name"] = attrs.pop(1)
@@ -534,6 +547,9 @@ def add_entity(attrs):
         pts = [ p0 ]
         if p1:
             pts.append(p1)
+
+    if '_closed' in attrs:
+        pts.append(pts[0])
 
     arr = points
     if len(pts) > 1:
