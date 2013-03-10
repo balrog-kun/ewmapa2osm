@@ -480,8 +480,14 @@ def add_entity(attrs):
             attrs["_vertical_alignment"] = [ "baseline", "bottom", "middle",
                 "top" ][int(attrs.pop(73))]
         attrs["_text_height"] = attrs.pop(40)
-        attrs["_text_rotation"] = attrs.pop(50)
-        attrs["_oblique_angle"] = attrs.pop(51)
+        if 50 in attrs:
+            attrs["_text_rotation"] = attrs.pop(50)
+        else:
+            attrs["_text_rotation"] = '0'
+        if 51 in attrs:
+            attrs["_oblique_angle"] = attrs.pop(51)
+        else:
+            attrs["_oblique_angle"] = '0'
     elif etype == "INSERT":
         attrs["_layer"] = layers[layer]["name"]
         if 50 in attrs:
@@ -1097,6 +1103,8 @@ for layer in segments:
                 for attr in seg2:
                     if attr not in attrs:
                         attrs[attr] = {}
+                    if isinstance(seg2[attr], list):
+                        continue
                     if seg2[attr] not in attrs[attr]:
                         attrs[attr][seg2[attr]] = 0
                     attrs[attr][seg2[attr]] += 1
