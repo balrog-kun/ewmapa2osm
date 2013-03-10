@@ -9,25 +9,22 @@ import math
 import xml.etree.cElementTree as ElementTree
 import codecs
 
-filename = 'rudaslaska.dxf'
-sourcestr = 'UM Ruda Śląska'
-
-input = codecs.open(filename, 'r', 'cp1250')
+from format_ewmapa_egib import *
 
 types = {
-    "1": {}, "10": {},
+    "": {}, "1": {}, "2": {}, "10": {},
     "BUI": {
         "building:type:pl": "Podpora (słup nośny) podcienia, wiaty, galerii",
         "building": "support",
     },
     "BYN": {
         "building:type:pl": "Przyziemie budynku nieognioodpornego",
-        #"building": "yes",
+        "building": "yes",
         "building:fireproof": "no",
     },
     "BZO": {
         "building:type:pl": "Przyziemie budynku ognioodpornego",
-        #"building": "yes",
+        "building": "yes",
         "building:fireproof": "yes",
     },
     "BUW": {
@@ -152,342 +149,6 @@ types = {
     "WSQ": {
         "description:pl": "Szczyt skarpy nieumocnionej",
         "fixme1": "yes",
-    },
-}
-
-layers = {
-    "EADOD_T_0": {
-        "type": "text",
-        "name": "Nazwa ulicy, placu, miejscowości",
-        "use": 1,
-    },
-    "EADTD_T_0": {
-        "type": "attrib",
-        "name": "Numer adresowy",
-        "use": 1,
-    },
-    "EBUOA_T_0": {
-        "type": "attrib",
-        "name": "Funkcja, numer najwyzszej kondygnacji, " + \
-            "budynku nieognioodpornego",
-        "use": 1,
-        "default": { "building:fireproof": "no" },
-    },
-    "EBUOA_T_1": {
-        "type": "attrib",
-        "name": "Funkcja, numer najwyzszej kondygnacji, budynku ognioodpornego",
-        "use": 1,
-        "default": { "building:fireproof": "yes" },
-    },
-    "EBUOA_T_2": {
-        "type": "attrib",
-        "name": "Opis wieży ognioodpornej będącej budynkiem",
-        "use": 1,
-        "default": { "building": "tower", "building:fireproof": "yes" },
-    },
-    "EBUOA_T_3": {
-        "type": "attrib",
-        "name": "Etykieta 'wtr' wiatraku ognioodpornego będącego budynkiem",
-        "use": 1,
-        "default": { "building": "windmill", "building:fireproof": "yes" },
-    },
-    "EBUOA_T_4": {
-        "type": "attrib",
-        "name": "Etykieta 'wtr' wiatraku nieognioodpornego będącego budynkiem",
-        "use": 1,
-        "default": { "building": "windmill", "building:fireproof": "no" },
-    },
-    "EBUOA_T_5": {
-        "type": "attrib",
-        "name": "Etykieta 'ciepl.' cieplarni, szklarni",
-        "use": 1,
-        "default": { "building": "greenhouse" },
-    },
-    "EBUOA_T_6": {
-        "type": "attrib",
-        "name": "Etykieta 'r.' bydunku w ruinie",
-        "use": 1,
-        "default": { "building": "ruin", "historic": "ruins" },
-    },
-    "EBTOO_T_0": {
-        "type": "attrib",
-        "name": "Liczba kondygnacji budynku ognioodpornego",
-        "use": 1,
-        "default": { "building:fireproof": "yes" },
-    },
-    "EBTOO_T_1": {
-        "type": "attrib",
-        "name": "Liczba kondygnacji budynku nieognioodpornego",
-        "use": 1,
-        "default": { "building:fireproof": "no" },
-    },
-    "EBTOO_T_2": {
-        "type": "attrib",
-        "name": "Opis wieży ognioodpornej, etykieta wiatraku ognioodpornego",
-        "use": 1,
-        "default": { "building:fireproof": "yes" },
-    },
-    "EBTOO_T_3": {
-        "type": "attrib",
-        "name": "Etykieta 'wtr' wiatraku nieognioodpornego " + \
-                "nie będącego budynkiem",
-        "use": 1,
-        "default": { "building": "windmill", "building:fireproof": "no" },
-    },
-    "EBTOO_T_4": {
-        "type": "attrib",
-        "name": "Liczba kondygnacji łącznika napowietrznego budynków",
-        "use": 1,
-        "default": { "building": "skyway" },
-    },
-    "EBTOO_T_5": {
-        "type": "attrib",
-        "name": "Etykieta 'rmp.' rampy",
-        "use": 1,
-        "default": { "building": "ramp" },
-    },
-    "EBTOO_T_6": {
-        "type": "attrib",
-        "name": "Etykieta 'f.' fundamentu",
-        "use": 1,
-        "default": { "building": "foundation", "building:levels": "0" },
-    },
-    "EBTOO_T_7": {
-        "type": "attrib",
-        "name": "Strzałka kierunku wjazdu do podziemia",
-        "use": 0,
-    },
-    "EBTOO_T_8": {
-        "type": "attrib",
-        "name": "Komin - symbol",
-        "use": 1,
-        "default": { "building": "chimney", "building:use:pl": "Komin" },
-    },
-    "EBUPP_L_0": {
-        "type": "spatial",
-        "name": "Przyziemie budynku nieognioodpornego, podpory, podcienia " + \
-            "z pomiaru w terenie",
-        "source": "survey",
-        "use": 1,
-        "default": { "building": "yes", "building:fireproof": "no" },
-    },
-    "EBUPP_L_1": {
-        "type": "spatial",
-        "name": "Przyziemie budynku ognioodpornego, podpory, podcienia " + \
-            "z pomiaru w terenie",
-        "source": "survey",
-        "use": 1,
-        "default": { "building": "yes", "building:fireproof": "yes" },
-    },
-    "EBUPP_L_2": {
-        "type": "spatial",
-        "name": "Przyziemie budynku nieognioodpornego, podpory, podcienia " + \
-            "z rastra",
-        "source": "raster",
-        "use": 1,
-        "default": { "building": "yes", "building:fireproof": "no" },
-    },
-    "EBUPP_L_3": {
-        "type": "spatial",
-        "name": "Przyziemie budynku ognioodpornego, podpory, podcienia " + \
-            "z rastra",
-        "source": "raster",
-        "use": 1,
-        "default": { "building": "yes", "building:fireproof": "yes" },
-    },
-    "EBUPP_L_4": {
-        "type": "spatial",
-        "name": "Nieudokumentowana warstwa, do sprawdzenia",
-        "use": 1,
-    },
-    "EBUPP_L_5": {
-        "type": "spatial",
-        "name": "Nieudokumentowana warstwa, do sprawdzenia",
-        "use": 1,
-    },
-    "EBUPP_L_6": {
-        "type": "spatial",
-        "name": "Nieudokumentowana warstwa, do sprawdzenia",
-        "use": 1,
-    },
-    "EBUPP_L_7": {
-        "type": "spatial",
-        "name": "Nieudokumentowana warstwa, do sprawdzenia",
-        "use": 1,
-    },
-    "EBUPP_L_8": {
-        "type": "spatial",
-        "name": "Nieudokumentowana warstwa, do sprawdzenia",
-        "use": 1,
-    },
-    "EBUPP_L_9": {
-        "type": "spatial",
-        "name": "Nieudokumentowana warstwa, do sprawdzenia",
-        "use": 1,
-    },
-    "EBUPP_L_10": {
-        "type": "spatial",
-        "name": "Nieudokumentowana warstwa, do sprawdzenia",
-        "use": 1,
-    },
-    "EBUPP_L_11": {
-        "type": "spatial",
-        "name": "Nieudokumentowana warstwa, do sprawdzenia",
-        "use": 1,
-    },
-    "EBUPO_L_0": {
-        "type": "spatial",
-        "name": "Obrys budynku nieognioodpornego, podpory, podcienia " + \
-            "z pomiaru w terenie",
-        "source": "survey",
-        "use": 1,
-        "default": { "building": "yes", "building:fireproof": "no" },
-    },
-    "EBUPO_L_1": {
-        "type": "spatial",
-        "name": "Obrys budynku ognioodpornego, podpory, podcienia " + \
-            "z pomiaru w terenie",
-        "source": "survey",
-        "use": 1,
-        "default": { "building": "yes", "building:fireproof": "yes" },
-    },
-    "EBUPO_L_2": {
-        "type": "spatial",
-        "name": "Wieża ognioodporna, wiatrak ognioodporny będący budynkiem " + \
-            "z pomiaru w terenie",
-        "source": "survey",
-        "use": 1,
-        "default": { "building": "tower", "building:fireproof": "yes" },
-    },
-    "EBUPO_L_3": {
-        "type": "spatial",
-        "name": "Cieplarnia, szklarnia, wiatrak nieognioodporny " + \
-            "z pomiaru w terenie",
-        "source": "survey",
-        "use": 1,
-        "default": { "building": "yes", "building:fireproof": "no" },
-    },
-    "EBUPO_L_4": {
-        "type": "spatial",
-        "name": "Wieża ognioodporna, wiatrak ognioodporny będący budynkiem " + \
-            "z pomiaru w terenie",
-        "source": "survey",
-        "use": 1,
-        "default": { "building": "ruin", "historic": "ruins" },
-    },
-    "EBUPO_L_5": {
-        "type": "spatial",
-        "name": "Obrys budynku nieognioodpornego, podpory, podcienia " + \
-            "z rastra",
-        "source": "raster",
-        "use": 1,
-        "default": { "building": "yes", "building:fireproof": "no" },
-    },
-    "EBUPO_L_6": {
-        "type": "spatial",
-        "name": "Obrys budynku ognioodpornego, podpory, podcienia " + \
-            "z rastra",
-        "source": "raster",
-        "use": 1,
-        "default": { "building": "yes", "building:fireproof": "yes" },
-    },
-    "EBUPO_L_7": {
-        "type": "spatial",
-        "name": "Wieża ognioodporna, wiatrak ognioodporny będący budynkiem " + \
-            "z rastra",
-        "source": "raster",
-        "use": 1,
-        "default": { "building": "tower", "building:fireproof": "yes" },
-    },
-    "EBUPO_L_8": {
-        "type": "spatial",
-        "name": "Cieplarnia, szklarnia, wiatrak nieognioodporny " + \
-            "z rastra",
-        "source": "raster",
-        "use": 1,
-        "default": { "building": "yes", "building:fireproof": "no" },
-    },
-    "EBUPO_L_9": {
-        "type": "spatial",
-        "name": "Wieża ognioodporna, wiatrak ognioodporny będący budynkiem " + \
-            "z rastra",
-        "source": "raster",
-        "use": 1,
-        "default": { "building": "ruin", "historic": "ruins" },
-    },
-    "EBTPO_L_0": {
-        "type": "spatial",
-        "name": "Blok budynku, wiata, przejazd pod budynkiem " + \
-            "z pomiaru w terenie",
-        "source": "survey",
-        "use": 1,
-        "default": { "building": "yes" },
-    },
-    "EBTPO_L_1": {
-        "type": "spatial",
-        "name": "Wieża ognioodporna, wiatrak ognioodporny niebędące " + \
-                "budynkiem, komin" + \
-                "z pomiaru w terenie",
-        "source": "survey",
-        "use": 1,
-        "default": { "building": "tower", "building:fireproof": "yes" },
-    },
-    "EBTPO_L_2": {
-        "type": "spatial",
-        "name": "Inne " + \
-                "z pomiaru w terenie",
-        "source": "survey",
-        "use": 1,
-    },
-    "EBTPO_L_3": {
-        "type": "spatial",
-        "name": "Łącznik napowietrzny budynków nieognioodpornych " + \
-                "z pomiaru w terenie",
-        "source": "survey",
-        "use": 1,
-        "default": { "building": "skyway", "building:fireproof": "yes" },
-    },
-    "EBTPO_L_4": {
-        "type": "spatial",
-        "name": "Blok budynku, wiata, przejazd pod budynkiem " + \
-                "z rastra",
-        "source": "raster",
-        "use": 1,
-        "default": { "building": "yes" },
-    },
-    "EBTPO_L_5": {
-        "type": "spatial",
-        "name": "Wieża ognioodporna, wiatrak ognioodporny niebędące " + \
-                "budynkiem, komin" + \
-                "z rastra",
-        "source": "raster",
-        "use": 1,
-        "default": { "building": "tower", "building:fireproof": "yes" },
-    },
-    "EBTPO_L_6": {
-        "type": "spatial",
-        "name": "Inne " + \
-                "z rastra",
-        "source": "raster",
-        "use": 1,
-    },
-    "EBTPO_L_7": {
-        "type": "spatial",
-        "name": "Łącznik napowietrzny budynków nieognioodpornych " + \
-                "z rastra",
-        "source": "raster",
-        "use": 1,
-        "default": { "building": "skyway", "building:fireproof": "yes" },
-    },
-    "EDZPD_L_0": {
-        "type": "spatial",
-        "name": "Granica działki ewidencyjnej",
-        "use": 0,
-    },
-    "EDZTD_T_0": {
-        "type": "text",
-        "name": "Numer ewidencyjny działki",
-        "use": 0,
     },
 }
 
@@ -652,6 +313,8 @@ buse = {
     },
 }
 
+input = codecs.open(filename, 'r', encoding)
+
 section = None
 lnum = -1
 sec_lnum = None
@@ -686,8 +349,6 @@ def add_entity(attrs):
             p1 = ( rnd(attrs.pop(11)), rnd(attrs.pop(21)) )
     if 39 in attrs:
         thickness = attrs.pop(39)
-    #if 40 in attrs:
-    #    radius = attrs.pop(40)
 
     if etype == "LINE" or etype == "CIRCLE" or \
             etype == "ARC" or etype == "POINT":
@@ -700,6 +361,10 @@ def add_entity(attrs):
             style.update(layers[layer]["default"])
         if 6 in attrs and attrs[6] != 'BYLAYER':
             stylestr = attrs.pop(6)
+            if stylestr.startswith('1_'):
+               stylestr = stylestr[2:]
+            elif stylestr.startswith('1'):
+               stylestr = stylestr[1:]
             if stylestr in types:
                 style.update(types[stylestr])
                 #style["ewmapa:kod_znakowy"] = stylestr
@@ -710,6 +375,10 @@ def add_entity(attrs):
                 attrs["fixme2"] = "unknown style " + str(stylestr)
         elif 2 in attrs:
             stylestr = attrs.pop(2)
+            if stylestr.startswith('1_'):
+               stylestr = stylestr[2:]
+            elif stylestr.startswith('1'):
+               stylestr = stylestr[1:]
             if stylestr in types:
                 style.update(types[stylestr])
                 #style["ewmapa:kod_znakowy"] = stylestr
@@ -857,9 +526,9 @@ sys.stderr.write("Fixing up street addresses...\n")
 
 streets = []
 for arr in [ segments, points ]:
-    if "EADOD_T_0" not in arr:
+    if road_labels not in arr:
         continue
-    for attrs in arr.pop("EADOD_T_0"):
+    for attrs in arr.pop(road_labels):
         if "_name" not in attrs:
             continue
         t = attrs.pop("_name")
@@ -873,9 +542,9 @@ for arr in [ segments, points ]:
         streets.append(( p0, a, t ))
 
 for arr in [ segments, points ]:
-    if "EADTD_T_0" not in arr:
+    if housenumber_labels not in arr:
         continue
-    for attrs in arr["EADTD_T_0"]:
+    for attrs in arr[housenumber_labels]:
         if "_name" not in attrs:
             continue
         a = float(attrs.pop("_text_rotation"))
@@ -885,7 +554,7 @@ for arr in [ segments, points ]:
             p1 = attrs["_p1"].split("x")
             p1 = ( float(p1[0]), float(p1[1]) )
             p0 = ( (p0[0] + p1[0]) * 0.5, (p0[1] + p1[1]) * 0.5 )
-        mindist = 10000
+        mindist = 1000
         street = None
         for sp, sa, sname in streets:
             adiff = sa - a
@@ -893,7 +562,7 @@ for arr in [ segments, points ]:
                 adiff -= 360.0
             while adiff < -100.0:
                 adiff += 360.0
-            tol = 25.0 # Angle difference tolerance
+            tol = 40.0 # Angle difference tolerance
             if (adiff > tol or adiff < -tol) and \
                     (adiff < 180 - tol or adiff > 180 + tol):
                 continue
@@ -911,8 +580,8 @@ for arr in [ segments, points ]:
             # 0.8km parallel distance.
             if abs(per_dist) >= 120 or abs(par_dist) >= 800:
                 continue
-            dist = abs(per_dist) * 6 + abs(par_dist) + \
-                    10 * abs(abs(adiff - 90) - 90)
+            dist = abs(per_dist) * 4 + abs(par_dist) + \
+                    abs(abs(adiff - 90) - 90) * 4
             if dist < mindist:
                 mindist = dist
                 street = sname
@@ -926,13 +595,11 @@ for arr in [ segments, points ]:
     # TODO: powinnismy rozroznic miedzy numerem nawyzszej kondygnacji i
     # liczba kondygnacji
     for layer in arr:
-        if layer[:5] not in [ "EBUOA", "EBTOO" ]:
-            continue
         for attrs in arr[layer]:
             if "_name" not in attrs:
                 continue
             t = attrs.pop("_name").lower()
-            #attrs["ewmapa:funkcja"] = t
+            #attrs["ewmapa:funkcja"] = t #####
             if t in busealias:
                 t = busealias[t]
             levels_attrs = {}
@@ -1342,7 +1009,8 @@ for layer in segments:
                     if attrs[attr][val] > maxscore:
                         maxscore = attrs[attr][val]
                         maxval = val
-                attrs[attr] = maxval
+                if maxscore > 1:
+                    attrs[attr] = maxval
 
             finalways[",".join(sorted(nd))] = {
                 "nd": nd + [ nd[0] ],
@@ -1419,7 +1087,11 @@ def point_in_poly(pt, poly):
 
 for arr in [ segments, points ]:
     for layer in arr:
-        if layers[layer]['type'] != 'attrib':
+        if not layers[layer]['type'].startswith('attrib'):
+            continue
+        if layers[layer]['type'] == 'attrib-point':
+            for attrs in arr[layer]:
+                finalnodes[attrs['_p0']] = attrs
             continue
         for attrs in arr[layer]:
             if "_d0" in attrs or "_d1" in attrs:
