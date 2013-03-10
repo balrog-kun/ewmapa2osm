@@ -112,6 +112,26 @@ types = {
         "building": "skyway",
         "building:fireproof": "yes",
     },
+    "BUN": {
+        "building:type:pl": "Obrys budynku nieognioodpornego",
+        "building": "yes",
+        "building:fireproof": "no",
+    },
+    "BUO": {
+        "building:type:pl": "Obrys budynku ognioodpornego",
+        "building": "yes",
+        "building:fireproof": "yes",
+    },
+    "WCN": {
+        "building:type:pl": "Wieża ognioodporna (ciśnień, ppożarowa, widokowa)",
+        "building": "yes",
+        "building:fireproof": "yes",
+    },
+    "CIE": {
+        "description:pl": "Cieplarnia, szklarnia",
+        "building": "greenhouse",
+        "building:levels": "1",
+    },
     "BUR": {
         "description:pl": "Budynek w ruinie",
         "building": "ruin",
