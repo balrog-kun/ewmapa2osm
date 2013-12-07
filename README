@@ -1,0 +1,62 @@
+This is a set of scripts, some generic and some very specific
+to some cadastral data sources.  The shape-utils directory contains
+small, mostly generic scripts that take an .osm file as input and
+output a processed .osm file:
+
+merge-segments.py reads a .osm file with shapes, such as building
+outlines/footprints, made up of any number of simple 2-node segments.
+It tries to merge these segments into complete closed lines in the most
+practical way.  The outline way is given the tags of every segment way
+it uses, selecting the tag value that appeared most often if the values
+vary.
+
+join-lines.py merges nodes that are less than 2cm apart into one and
+merges nodes into ways if they're closer than 2cm, or 20cm in case of
+a node that is at the end of a line (which often indicates that a
+closed shape hasn't been formed because of unintentional overshoot or
+undershoot).
+
+dedupe-segments.py filters out ways that contain the exact same set of
+of nodes leaving only one.
+
+merge-building-addrs.py is a version of the script at
+https://github.com/balrog-kun/osm-addr-tools that uses a single input
+.osm file containing address nodes and building outlines and puts the
+address tags on the outlines, removing the nodes, depending on various
+conditions.  Also allows the node to be some distance off the building
+wall.
+
+egib.py applies the rules of the basic Polish cadastral data "K-1"
+manual (this is a long story) to convert some attributes into more
+usual OSM tags.  This script will almost surely need modification for
+any dataset other than the one small county it was originaly made
+for, even though most of the rules should be the same throughout
+Polish cadastre.
+
+These scripts together do (in smaller steps) most of what convert.py
+does all at once at the cost of it being a hard to read ball of
+spaghetti code.  They may be use in conjuction with ogr2osm.py to
+convert data from various sources such as local governments' geodesy
+offices, which often only have (or make available) data produced by
+automatic vectorisation of old paper cadastral maps meaning that the
+files in reality describe a picture of the map rather than a geo-
+database.  In this case they'd be used in the following order, after
+some reconfiguration:
+
+ogr2osm
+dedupe-segments
+join-lines
+merged-segments
+egib
+JOSM manual corrections/clean-up
+JOSM download of existing data
+JOSM manual conflation
+merge-building-addrs
+
+Or they can be used individually.
+
+The convert.py script takes a DXF file as exported from the ewmapa
+program and does the first 5 processing steps and some more.  It
+probably needs a new config file for a new dataset.  Various
+config files used with data from various Polish counties are
+included.
