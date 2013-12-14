@@ -1,5 +1,19 @@
 #! /usr/bin/python2
 # vim: fileencoding=utf-8 encoding=utf-8 et sw=4
+#
+# Takes one .osm filename as argument and greps it for address nodes
+# (nodes tagged addr:housenumber=*) contained within building=* closed
+# ways, or close to the walls.  The address tags are moved to the
+# building way and the nodes removed if various conditions are met:
+# - no tags other than addressing on the node.
+# - exactly one address within the building, or within 1.5m from it.
+# etc.  Also checks for funky geometries (self-intersecting etc) and
+# address duplicates.
+#
+# If you've got the buildings and the addresses in separate files,
+# merge them with JOSM or use the version of this script at
+# https://github.com/balrog-kun/osm-addr-tools which takes two
+# arguments.
 
 import sys
 import os
@@ -120,7 +134,13 @@ for elem in root:
     lon /= j
     if refs[0] != refs[-1]:
         continue
-    if rhr.is_rhr(way[1:]):
+    try:
+        is_rhr = rhr.is_rhr(way[1:])
+    except:
+        is_rhr = True
+        ElementTree.SubElement(elem, 'tag', { 'k': 'fixme3', 'v': 'shape' })
+        print(id)
+    if is_rhr:
         nway = way
     else:
         nway = [] + way
