@@ -88,17 +88,17 @@ for elem in root:
         if 'addr:housenumber' not in tags:
             continue
         addrs.append(( lat, lon, tags, elem, [] ))
-        name = tags['addr:housenumber']
+        name = tags['addr:housenumber'].lower()
         if 'addr:street' in tags:
-            name += ' ' + tags['addr:street']
+            name += ' ' + tags['addr:street'].lower()
         elif 'addr:place' in tags:
-            name += ' ' + tags['addr:place']
+            name += ' ' + tags['addr:place'].lower()
         else:
             continue
         if name in uniqaddr:
             sys.stderr.write(name + ' is a duplicate\n')
             tags['fixme'] = 'Duplicate address'
-            uniqaddr[name]['fixme'] = 'Duplicate address'
+            uniqaddr[name]['fixme'] = 'Duplicate address (first)'
         uniqaddr[name] = tags
         continue
 
@@ -227,6 +227,14 @@ for lat, lon, way, eway, eeway, btags, belem, newaddrs in bldgs:
             ElementTree.SubElement(belem, 'tag', { 'k': k, 'v': btags[k] })
         for subelem in todel:
             belem.remove(subelem)
+
+for lat, lon, tags, elem, _ in addrs:
+    # Rewrite the tags arrays without marking objects as modified
+    todel = [ subelem for subelem in elem if subelem.tag == 'tag' ]
+    for k in tags:
+        ElementTree.SubElement(elem, 'tag', { 'k': k, 'v': tags[k] })
+    for subelem in todel:
+        elem.remove(subelem)
 
 sys.stdout.write("Writing .osm's\n")
 ElementTree.ElementTree(root).write("output.osm", "utf-8")
